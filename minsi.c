@@ -125,14 +125,13 @@ static void minsiReadEscape(struct minsi *minsi)
         return;
     }
     if ((byt != 'O') && (byt != '[')) {
-        // TODO
         minsiClearBytes(minsi);
         return;
     }
     minsi->rBytes[len++] = byt;
     do {
         byt = minsiReadByteWithTimeout(minsi);
-        if ((byt == -1) || (len == sizeof(minsi->rBytes) - 1)) {
+        if ((byt == -1) || (len + 1 == sizeof(minsi->rBytes))) {
             minsiClearBytes(minsi);
             return;
         }
