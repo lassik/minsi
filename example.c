@@ -48,7 +48,10 @@ int main(void)
 {
     int shouldquit;
 
-    minsi = minsiFromStdin();
+    if (!(minsi = minsiFromStdin())) {
+        fprintf(stderr, "Cannot open terminal\n");
+        return 1;
+    }
     initSignalHandler();
     minsiSwitchToRawMode(minsi);
     update("Press some keys. Press 'q' to quit.", 0);

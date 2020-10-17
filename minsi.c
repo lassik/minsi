@@ -41,6 +41,9 @@ struct minsi *minsiFromFd(int fd)
 {
     struct minsi *minsi;
 
+    if (!isatty(fd)) {
+        return 0;
+    }
     minsi = calloc(1, sizeof(*minsi));
     minsi->pollfd.fd = fd;
     minsi->pollfd.events = POLLIN;
