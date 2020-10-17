@@ -190,7 +190,9 @@ static void minsiReadBytes(struct minsi *minsi)
     int byt;
 
     byt = minsiReadByte(minsi);
-    if (byt < 0x1b) {
+    if (byt < 0) {
+        return;
+    } else if (byt < 0x1b) {
         minsi->rBytes[0] = '^';
         minsi->rBytes[1] = '@' + byt;
     } else if (byt == 0x1b) {
