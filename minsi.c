@@ -130,9 +130,6 @@ static int minsiFillByte(struct minsi *minsi)
     if ((byt = minsiReadByteWithTimeout(minsi)) == -1) {
         return -1;
     }
-    if (byt == ':') {
-        byt = ';';
-    }
     minsi->rBytes[len++] = byt;
     return byt;
 }
