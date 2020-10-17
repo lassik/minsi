@@ -108,7 +108,7 @@ int minsiGetSize(struct minsi *minsi, int *out_x, int *out_y)
     return 0;
 }
 
-static void minsiClearBytes(struct minsi *minsi)
+static void minsiDiscardInput(struct minsi *minsi)
 {
     memset(minsi->rBytes, 0, sizeof(minsi->rBytes));
 }
@@ -125,14 +125,14 @@ static void minsiReadEscape(struct minsi *minsi)
         return;
     }
     if ((byt != 'O') && (byt != '[')) {
-        minsiClearBytes(minsi);
+        minsiDiscardInput(minsi);
         return;
     }
     minsi->rBytes[len++] = byt;
     do {
         byt = minsiReadByteWithTimeout(minsi);
         if ((byt == -1) || (len + 1 == sizeof(minsi->rBytes))) {
-            minsiClearBytes(minsi);
+            minsiDiscardInput(minsi);
             return;
         }
         if (byt == ':') {
@@ -176,7 +176,7 @@ static void minsiReadUtf8Rune(struct minsi *minsi, int byt)
     }
     return;
 fail:
-    minsiClearBytes(minsi);
+    minsiDiscardInput(minsi);
 }
 
 static void minsiReadBytes(struct minsi *minsi)
@@ -204,7 +204,7 @@ static void minsiReadBytes(struct minsi *minsi)
 
 const char *minsiReadEvent(struct minsi *minsi)
 {
-    minsiClearBytes(minsi);
+    minsiDiscardInput(minsi);
     if (minsi->resizeFlag) {
         minsi->resizeFlag = 0;
         minsi->rBytes[0] = 'r';
