@@ -139,24 +139,27 @@ static void drawBox(void)
     const char horzLine[] = "q";
     const char vertLine[] = "x";
     int x, y;
+    int r, b;
 
+    r = width - 1;
+    b = height - 1;
     minsiWriteEscape(minsi, "(0");
     minsiWriteEscape(minsi, "[0m");
     gotoTopLeft();
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
-            if (x == 0 && y == 0) {
+            if ((y == 0) && (x == 0)) {
                 minsiWriteString(minsi, cornerTL);
-            } else if (x == 0 && y + 1 == height) {
-                minsiWriteString(minsi, cornerBL);
-            } else if (x + 1 == width && y == 0) {
+            } else if ((y == 0) && (x == r)) {
                 minsiWriteString(minsi, cornerTR);
-            } else if (x + 1 == width && y + 1 == height) {
+            } else if ((y == b) && (x == 0)) {
+                minsiWriteString(minsi, cornerBL);
+            } else if ((y == b) && (x == r)) {
                 minsiWriteString(minsi, cornerBR);
-            } else if (x == 0 || x + 1 == width) {
-                minsiWriteString(minsi, vertLine);
-            } else if (y == 0 || y + 1 == height) {
+            } else if ((y == 0) || (y == b)) {
                 minsiWriteString(minsi, horzLine);
+            } else if ((x == 0) || (x == r)) {
+                minsiWriteString(minsi, vertLine);
             } else {
                 minsiWriteString(minsi, " ");
             }
