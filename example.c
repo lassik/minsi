@@ -158,7 +158,11 @@ int main(void)
         switch (event[0]) {
         case '^':
             translat = lookup(lookupControl, &event[1]);
-            update("Control character: ", translat ? translat : &event[1]);
+            if (translat) {
+                update("Special key: ", translat);
+            } else {
+                update("Control character: ", &event[1]);
+            }
             break;
         case 'c':
             update("Character: ", &event[1]);
@@ -168,7 +172,11 @@ int main(void)
             break;
         case 'e':
             translat = lookup(lookupEscape, &event[1]);
-            update("Escape sequence: ", translat ? translat : &event[1]);
+            if (translat) {
+                update("Special key: ", translat);
+            } else {
+                update("Escape sequence: ", &event[1]);
+            }
             break;
         case 'r':
             update("Window resize", 0);
