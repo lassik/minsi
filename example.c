@@ -141,7 +141,9 @@ static void update(const char *part1, const char *part2)
 
 int main(void)
 {
-    int shouldquit;
+    const char *translat;
+    const char *event;
+    int shouldQuit;
 
     if (!(minsi = minsiFromStdin())) {
         fprintf(stderr, "Cannot open terminal\n");
@@ -150,12 +152,9 @@ int main(void)
     initSignalHandler();
     minsiSwitchToRawMode(minsi);
     update("Press some keys. Press 'q' to quit.", 0);
-    shouldquit = 0;
-    while (!shouldquit) {
-        static char buf[64];
-        const char *translat;
-        const char *event = minsiReadEvent(minsi);
-        memset(buf, 0, sizeof(buf));
+    shouldQuit = 0;
+    while (!shouldQuit) {
+        event = minsiReadEvent(minsi);
         switch (event[0]) {
         case '^':
             translat = lookup(lookupControl, &event[1]);
@@ -164,7 +163,7 @@ int main(void)
         case 'c':
             update("Character: ", &event[1]);
             if (!strcmp(&event[1], "q")) {
-                shouldquit = 1;
+                shouldQuit = 1;
             }
             break;
         case 'e':
