@@ -120,11 +120,15 @@ static void initSignalHandler(void)
     sigaction(SIGWINCH, &sa, 0);
 }
 
-static void clear(void) { minsiWriteEscape(minsi, "[2J"); }
-
 static void gotoTopLeft(void) { minsiWriteEscape(minsi, "[H"); }
 
 static void gotoNextLine(void) { minsiWriteEscape(minsi, "[1E"); }
+
+static void clear(void)
+{
+    minsiWriteEscape(minsi, "[2J");
+    gotoTopLeft();
+}
 
 static void drawBox(void)
 {
@@ -230,7 +234,8 @@ int main(void)
             break;
         }
     }
-    update(0, 0);
+    clear();
+    minsiWriteFlush(minsi);
     minsiSwitchToOrigMode(minsi);
     return 0;
 }

@@ -35,6 +35,8 @@ struct minsi {
     struct termios origMode;
     volatile int resizeFlag;
     char rBytes[16];
+    char wBytes[4096];
+    size_t wFill;
 };
 
 struct minsi *minsiFromFd(int fd)
@@ -213,6 +215,21 @@ const char *minsiReadEvent(struct minsi *minsi)
     return minsi->rBytes;
 }
 
+int minsiWriteFlush(struct minsi *minsi)
+{
+    int rv;
+
+    rv = 0;
+    if (minsi->wFill) {
+        if (write(minsi->pollfd.fd, minsi->wBytes, minsi->wFill) == -1) {
+            rv = -1;
+        }
+    }
+    memset(minsi->wBytes, 0, sizeof(minsi->wBytes));
+    minsi->wFill = 0;
+    return rv;
+}
+
 static int minsiIsOrdinaryChar(int ch)
 {
     if (ch < 0x20) {
@@ -228,10 +245,23 @@ static int minsiIsOrdinaryChar(int ch)
 
 static int minsiWriteRawStringN(struct minsi *minsi, const char *s, size_t n)
 {
-    if (n) {
-        if (write(minsi->pollfd.fd, s, n) == -1) {
-            return -1;
+    size_t room, part;
+
+    while (n) {
+        room = sizeof(minsi->wBytes) - minsi->wFill;
+        part = n;
+        if (part > room) {
+            part = room;
         }
+        memcpy(&minsi->wBytes[minsi->wFill], s, part);
+        minsi->wFill += part;
+        if (minsi->wFill == sizeof(minsi->wBytes)) {
+            if (minsiWriteFlush(minsi) == -1) {
+                return -1;
+            }
+        }
+        s += part;
+        n -= part;
     }
     return 0;
 }
@@ -262,7 +292,5 @@ void minsiWriteEscape(struct minsi *minsi, const char *string)
     minsiWriteRawString(minsi, "\x1b");
     minsiWriteString(minsi, string);
 }
-
-void minsiWriteFlush(struct minsi *minsi) { (void)minsi; }
 
 void minsiSetResizeFlag(struct minsi *minsi) { minsi->resizeFlag = 1; }
