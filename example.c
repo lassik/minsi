@@ -55,7 +55,6 @@ int main(void)
     initSignalHandler();
     minsiSwitchToRawMode(minsi);
     update("Press some keys. Press 'q' to quit.", 0);
-    minsiWriteFlush(minsi);
     shouldquit = 0;
     while (!shouldquit) {
         static char buf[64];
