@@ -8,6 +8,7 @@
 #include <minsi.h>
 
 static struct minsi *minsi;
+static int width, height;
 
 struct pair {
     const char *a;
@@ -119,15 +120,56 @@ static void initSignalHandler(void)
     sigaction(SIGWINCH, &sa, 0);
 }
 
-static void clear(void)
+static void clear(void) { minsiWriteEscape(minsi, "[2J"); }
+
+static void gotoTopLeft(void) { minsiWriteEscape(minsi, "[H"); }
+
+static void gotoNextLine(void) { minsiWriteEscape(minsi, "[1E"); }
+
+static void drawBox(void)
 {
-    minsiWriteEscape(minsi, "[2J");
-    minsiWriteEscape(minsi, "[H");
+    const char cornerTL[] = "l";
+    const char cornerTR[] = "k";
+    const char cornerBL[] = "m";
+    const char cornerBR[] = "j";
+    const char horzLine[] = "q";
+    const char vertLine[] = "x";
+    int x, y;
+
+    minsiWriteEscape(minsi, "(0");
+    minsiWriteEscape(minsi, "[0m");
+    gotoTopLeft();
+    for (y = 0; y < height; y++) {
+        for (x = 0; x < width; x++) {
+            if (x == 0 && y == 0) {
+                minsiWriteString(minsi, cornerTL);
+            } else if (x == 0 && y + 1 == height) {
+                minsiWriteString(minsi, cornerBL);
+            } else if (x + 1 == width && y == 0) {
+                minsiWriteString(minsi, cornerTR);
+            } else if (x + 1 == width && y + 1 == height) {
+                minsiWriteString(minsi, cornerBR);
+            } else if (x == 0 || x + 1 == width) {
+                minsiWriteString(minsi, vertLine);
+            } else if (y == 0 || y + 1 == height) {
+                minsiWriteString(minsi, horzLine);
+            } else {
+                minsiWriteString(minsi, " ");
+            }
+        }
+        gotoNextLine();
+    }
+    minsiWriteEscape(minsi, "(B");
 }
 
 static void update(const char *part1, const char *part2)
 {
     clear();
+    drawBox();
+    gotoTopLeft();
+    gotoNextLine();
+    gotoNextLine();
+    minsiWriteEscape(minsi, "[4C");
     if (part1) {
         minsiWriteEscape(minsi, "[31m");
         minsiWriteString(minsi, part1);
@@ -149,8 +191,9 @@ int main(void)
         fprintf(stderr, "Cannot open terminal\n");
         return 1;
     }
-    initSignalHandler();
     minsiSwitchToRawMode(minsi);
+    initSignalHandler();
+    minsiGetSize(minsi, &width, &height);
     update("Press some keys. Press 'q' to quit.", 0);
     shouldQuit = 0;
     while (!shouldQuit) {
@@ -179,6 +222,7 @@ int main(void)
             }
             break;
         case 'r':
+            minsiGetSize(minsi, &width, &height);
             update("Window resize", 0);
             break;
         default:
