@@ -119,33 +119,72 @@ static void minsiDiscardOutput(struct minsi *minsi)
     minsi->wFill = 0;
 }
 
+static int minsiFillByte(struct minsi *minsi)
+{
+    int byt;
+    size_t len;
+
+    if ((len = strlen(minsi->rBytes)) >= sizeof(minsi->rBytes) - 1) {
+        return -1;
+    }
+    if ((byt = minsiReadByteWithTimeout(minsi)) == -1) {
+        return -1;
+    }
+    if (byt == ':') {
+        byt = ';';
+    }
+    minsi->rBytes[len++] = byt;
+    return byt;
+}
+
 static void minsiReadEscape(struct minsi *minsi)
 {
-    size_t len;
-    int byt;
+    int len, byt;
 
     len = 0;
     minsi->rBytes[len++] = 'e';
-    byt = minsiReadByteWithTimeout(minsi);
-    if (byt == -1) {
+    if ((byt = minsiFillByte(minsi)) == -1) {
         return;
     }
     if ((byt != 'O') && (byt != '[')) {
-        minsiDiscardInput(minsi);
+        goto fail;
+    }
+    do {
+        if ((byt = minsiFillByte(minsi)) == -1) {
+            goto fail;
+        }
+    } while ((byt >= 0x30) && (byt <= 0x3F));
+    while ((byt >= 0x20) && (byt <= 0x2F)) {
+        if ((byt = minsiFillByte(minsi)) == -1) {
+            goto fail;
+        }
+    }
+    if ((byt >= 0x40) && (byt <= 0x7E)) {
+        fprintf(stderr, "<%s>\n", minsi->rBytes);
         return;
     }
-    minsi->rBytes[len++] = byt;
-    do {
-        byt = minsiReadByteWithTimeout(minsi);
-        if ((byt == -1) || (len + 1 == sizeof(minsi->rBytes))) {
-            minsiDiscardInput(minsi);
-            return;
-        }
-        if (byt == ':') {
-            byt = ';';
-        }
-        minsi->rBytes[len++] = byt;
-    } while ((byt == ';') || ((byt >= '0') && (byt <= '9')));
+fail:
+    minsiDiscardInput(minsi);
+}
+
+static void minsiReadMouse(struct minsi *minsi)
+{
+    int byt;
+
+    minsiDiscardInput(minsi);
+    minsi->rBytes[0] = 'm';
+    if ((byt = minsiFillByte(minsi)) == -1) {
+        goto fail;
+    }
+    if ((byt = minsiFillByte(minsi)) == -1) {
+        goto fail;
+    }
+    if ((byt = minsiFillByte(minsi)) == -1) {
+        goto fail;
+    }
+    return;
+fail:
+    minsiDiscardInput(minsi);
 }
 
 static void minsiReadUtf8Rune(struct minsi *minsi, int byt)
@@ -197,6 +236,9 @@ static void minsiReadBytes(struct minsi *minsi)
         minsi->rBytes[1] = '@' + byt;
     } else if (byt == 0x1b) {
         minsiReadEscape(minsi);
+        if (!strcmp(minsi->rBytes, "e[M")) {
+            minsiReadMouse(minsi);
+        }
     } else if (byt < 0x20) {
         minsi->rBytes[0] = '^';
         minsi->rBytes[1] = '@' + byt;

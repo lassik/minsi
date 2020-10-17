@@ -201,6 +201,7 @@ int main(void)
     minsiSwitchToRawMode(minsi);
     initSignalHandler();
     minsiGetSize(minsi, &width, &height);
+    minsiWriteEscape(minsi, "[?1000h");
     update("Press some keys. Press 'q' to quit.", 0);
     shouldQuit = 0;
     while (!shouldQuit) {
@@ -227,6 +228,9 @@ int main(void)
             } else {
                 update("Escape sequence: ", &event[1]);
             }
+            break;
+        case 'm':
+            update("Mouse event", 0);
             break;
         case 'r':
             minsiGetSize(minsi, &width, &height);

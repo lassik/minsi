@@ -3,6 +3,7 @@
 // '^' -- control character     "@" "A" ... "?"
 // 'c' -- character             "ö"
 // 'e' -- escape sequence       "[1;10C"
+// 'm' -- mouse event           ""
 // 'r' -- resize                ""
 
 struct minsi;
