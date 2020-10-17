@@ -34,7 +34,7 @@ struct minsi {
     struct termios rawMode;
     struct termios origMode;
     volatile int resizeFlag;
-    char bytes[16];
+    char rBytes[16];
 };
 
 struct minsi *minsiFromFd(int fd)
@@ -61,12 +61,12 @@ struct minsi *minsiFromStdout(void) { return minsiFromFd(1); }
 
 static int minsiReadByte(struct minsi *minsi)
 {
-    char bytes[1];
+    char rBytes[1];
 
-    if (read(minsi->pollfd.fd, bytes, 1) != 1) {
+    if (read(minsi->pollfd.fd, rBytes, 1) != 1) {
         return -1;
     }
-    return (int)(unsigned char)bytes[0];
+    return (int)(unsigned char)rBytes[0];
 }
 
 static int minsiReadByteWithTimeout(struct minsi *minsi)
@@ -108,7 +108,7 @@ int minsiGetSize(struct minsi *minsi, int *out_x, int *out_y)
 
 static void minsiClearBytes(struct minsi *minsi)
 {
-    memset(minsi->bytes, 0, sizeof(minsi->bytes));
+    memset(minsi->rBytes, 0, sizeof(minsi->rBytes));
 }
 
 static void minsiReadEscape(struct minsi *minsi)
@@ -117,7 +117,7 @@ static void minsiReadEscape(struct minsi *minsi)
     int byt;
 
     len = 0;
-    minsi->bytes[len++] = 'e';
+    minsi->rBytes[len++] = 'e';
     byt = minsiReadByteWithTimeout(minsi);
     if (byt == -1) {
         return;
@@ -127,17 +127,17 @@ static void minsiReadEscape(struct minsi *minsi)
         minsiClearBytes(minsi);
         return;
     }
-    minsi->bytes[len++] = byt;
+    minsi->rBytes[len++] = byt;
     do {
         byt = minsiReadByteWithTimeout(minsi);
-        if ((byt == -1) || (len == sizeof(minsi->bytes) - 1)) {
+        if ((byt == -1) || (len == sizeof(minsi->rBytes) - 1)) {
             minsiClearBytes(minsi);
             return;
         }
         if (byt == ':') {
             byt = ';';
         }
-        minsi->bytes[len++] = byt;
+        minsi->rBytes[len++] = byt;
     } while ((byt == ';') || ((byt >= '0') && (byt <= '9')));
 }
 
@@ -146,8 +146,8 @@ static void minsiReadUtf8Rune(struct minsi *minsi, int byt)
     size_t len, cont;
 
     len = 0;
-    minsi->bytes[len++] = 'c';
-    minsi->bytes[len++] = byt;
+    minsi->rBytes[len++] = 'c';
+    minsi->rBytes[len++] = byt;
     if (byt < 0) {
         goto fail;
     } else if (byt < HI1) {
@@ -168,7 +168,7 @@ static void minsiReadUtf8Rune(struct minsi *minsi, int byt)
         if (byt < HI1) {
             goto fail;
         } else if (byt < HI2) {
-            minsi->bytes[len++] = byt;
+            minsi->rBytes[len++] = byt;
         } else {
             goto fail;
         }
@@ -184,18 +184,18 @@ static void minsiReadBytes(struct minsi *minsi)
 
     byt = minsiReadByte(minsi);
     if (byt < 0x1b) {
-        minsi->bytes[0] = '^';
-        minsi->bytes[1] = '@' + byt;
+        minsi->rBytes[0] = '^';
+        minsi->rBytes[1] = '@' + byt;
     } else if (byt == 0x1b) {
         minsiReadEscape(minsi);
     } else if (byt < 0x20) {
-        minsi->bytes[0] = '^';
-        minsi->bytes[1] = '@' + byt;
+        minsi->rBytes[0] = '^';
+        minsi->rBytes[1] = '@' + byt;
     } else if (byt < 0x7f) {
         minsiReadUtf8Rune(minsi, byt);
     } else if (byt == 0x7f) {
-        minsi->bytes[0] = '^';
-        minsi->bytes[1] = '?';
+        minsi->rBytes[0] = '^';
+        minsi->rBytes[1] = '?';
     } else {
         minsiReadUtf8Rune(minsi, byt);
     }
@@ -206,11 +206,11 @@ const char *minsiReadEvent(struct minsi *minsi)
     minsiClearBytes(minsi);
     if (minsi->resizeFlag) {
         minsi->resizeFlag = 0;
-        minsi->bytes[0] = 'r';
+        minsi->rBytes[0] = 'r';
     } else {
         minsiReadBytes(minsi);
     }
-    return minsi->bytes;
+    return minsi->rBytes;
 }
 
 static int minsiIsOrdinaryChar(int ch)
