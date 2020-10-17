@@ -113,6 +113,12 @@ static void minsiDiscardInput(struct minsi *minsi)
     memset(minsi->rBytes, 0, sizeof(minsi->rBytes));
 }
 
+static void minsiDiscardOutput(struct minsi *minsi)
+{
+    memset(minsi->wBytes, 0, sizeof(minsi->wBytes));
+    minsi->wFill = 0;
+}
+
 static void minsiReadEscape(struct minsi *minsi)
 {
     size_t len;
@@ -224,8 +230,7 @@ int minsiWriteFlush(struct minsi *minsi)
             rv = -1;
         }
     }
-    memset(minsi->wBytes, 0, sizeof(minsi->wBytes));
-    minsi->wFill = 0;
+    minsiDiscardOutput(minsi);
     return rv;
 }
 
