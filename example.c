@@ -16,7 +16,7 @@ struct pair {
 
 static const char *lookup(const struct pair *pair, const char *a)
 {
-    for (; pair->a && pair->b; pair++) {
+    for (; pair->a; pair++) {
         if (!strcmp(pair->a, a)) {
             return pair->b;
         }
